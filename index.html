@@ -188,6 +188,28 @@
     .profile-email { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
 
+    /* ── Profile Modal ── */
+    .profile-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 0; width: 100%; max-width: 360px; box-shadow: 0 24px 64px rgba(0,0,0,.7); animation: slideUp .3s cubic-bezier(.16,1,.3,1); overflow: hidden; }
+    .profile-modal-header { position: relative; padding: 32px 28px 24px; background: linear-gradient(135deg, rgba(124,111,255,.2), rgba(56,189,248,.1)); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .profile-modal-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: white; box-shadow: 0 8px 24px rgba(124,111,255,.4); position: relative; cursor: pointer; overflow: hidden; }
+    .profile-modal-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; position: absolute; inset: 0; }
+    .avatar-upload-hint { position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; font-size: 22px; z-index: 1; }
+    .profile-modal-avatar:hover .avatar-upload-hint { opacity: 1; }
+    .profile-modal-name { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+    .profile-modal-email { font-size: 13px; color: var(--muted); }
+    .profile-modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; }
+    .profile-stat { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--surface-2); border-radius: 12px; border: 1px solid var(--border); }
+    .profile-stat-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(124,111,255,.15); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .profile-stat-info { flex: 1; }
+    .profile-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 500; }
+    .profile-stat-value { font-size: 14px; font-weight: 500; margin-top: 2px; }
+    .profile-modal-footer { padding: 0 28px 24px; display: flex; gap: 10px; }
+    .btn-danger { flex: 1; padding: 11px; background: rgba(255,94,125,.1); border: 1px solid rgba(255,94,125,.2); border-radius: 10px; color: var(--red); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s; }
+    .btn-danger:hover { background: rgba(255,94,125,.2); }
+    .profile-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,.08); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .profile-close:hover { background: rgba(255,255,255,.15); color: var(--text); }
+    #avatarFileInput { display: none; }
+
     @media (max-width: 640px) {
       .sidebar { width: 100%; min-width: unset; display: none; }
       .sidebar.mobile-show { display: flex; position: fixed; inset: 0; z-index: 50; }
@@ -265,7 +287,7 @@
       <div class="empty-chats">Нет диалогов.<br/>Начни новый чат!</div>
     </div>
 
-    <div class="profile-badge">
+    <div class="profile-badge" onclick="showProfileModal()" style="cursor:pointer;" title="Мой профиль">
       <div class="profile-avatar" id="profileAvatar">?</div>
       <div class="profile-info">
         <div class="profile-name" id="profileName">—</div>
@@ -308,6 +330,52 @@
           </svg>
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-overlay" id="profileModal">
+  <div class="profile-modal">
+    <div class="profile-modal-header">
+      <button class="profile-close" onclick="hideProfileModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="profile-modal-avatar" onclick="document.getElementById('avatarFileInput').click()">
+        <span id="profileModalInitial">?</span>
+        <img id="profileModalImg" src="" style="display:none"/>
+        <div class="avatar-upload-hint">📷</div>
+      </div>
+      <input type="file" id="avatarFileInput" accept="image/*" onchange="uploadAvatar(this)"/>
+      <div class="profile-modal-name" id="profileModalName">—</div>
+      <div class="profile-modal-email" id="profileModalEmail">—</div>
+    </div>
+    <div class="profile-modal-body">
+      <div class="profile-stat">
+        <div class="profile-stat-icon">👤</div>
+        <div class="profile-stat-info">
+          <div class="profile-stat-label">Имя пользователя</div>
+          <div class="profile-stat-value" id="profileModalUsername">—</div>
+        </div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-icon">📅</div>
+        <div class="profile-stat-info">
+          <div class="profile-stat-label">Дата регистрации</div>
+          <div class="profile-stat-value" id="profileModalDate">—</div>
+        </div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-icon">💬</div>
+        <div class="profile-stat-info">
+          <div class="profile-stat-label">Диалогов</div>
+          <div class="profile-stat-value" id="profileModalChats">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="profile-modal-footer">
+      <button class="btn-danger" onclick="logout(); hideProfileModal()">Выйти из аккаунта</button>
+      <button class="btn-sm" onclick="hideProfileModal()">Закрыть</button>
     </div>
   </div>
 </div>
@@ -586,7 +654,65 @@ window.startChat = async (otherUid, otherName, otherEmail) => {
   openChat(chatId, otherName);
 };
 
-// ── Search filter ─────────────────────────────────────────────────────────────
+// ── Profile Modal ─────────────────────────────────────────────────────────────
+window.showProfileModal = async () => {
+  if (!currentUser) return;
+  const name  = currentUser.displayName || currentUser.email.split('@')[0];
+  const email = currentUser.email;
+
+  document.getElementById('profileModalName').textContent     = name;
+  document.getElementById('profileModalEmail').textContent    = email;
+  document.getElementById('profileModalUsername').textContent = name;
+  document.getElementById('profileModalChats').textContent    = chatsData.length;
+
+  // Avatar
+  if (currentUser.photoURL) {
+    document.getElementById('profileModalInitial').style.display = 'none';
+    const img = document.getElementById('profileModalImg');
+    img.src = currentUser.photoURL;
+    img.style.display = 'block';
+  } else {
+    document.getElementById('profileModalInitial').textContent    = name[0].toUpperCase();
+    document.getElementById('profileModalInitial').style.display  = 'flex';
+    document.getElementById('profileModalImg').style.display      = 'none';
+  }
+
+  // Registration date from Firestore
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
+    if (snap.exists() && snap.data().createdAt) {
+      const date = snap.data().createdAt.toDate();
+      document.getElementById('profileModalDate').textContent = date.toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  } catch(e) {
+    document.getElementById('profileModalDate').textContent = '—';
+  }
+
+  document.getElementById('profileModal').classList.add('show');
+};
+
+window.hideProfileModal = () => document.getElementById('profileModal').classList.remove('show');
+
+// Avatar upload (base64 → Firestore)
+window.uploadAvatar = async (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result;
+    await updateProfile(auth.currentUser, { photoURL: base64 });
+    await updateDoc(doc(db, 'users', currentUser.uid), { photoURL: base64 });
+    // Update sidebar avatar
+    document.getElementById('profileAvatar').innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+    // Update modal
+    document.getElementById('profileModalInitial').style.display = 'none';
+    const img = document.getElementById('profileModalImg');
+    img.src = base64; img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+};
+
+
 window.filterChats = val => {
   const filtered = chatsData.filter(c => {
     const otherId = c.members.find(m => m !== currentUser.uid);
@@ -654,6 +780,10 @@ function updateStrength(val) {
   document.getElementById('sFill').style.width = map[s].w;
   document.getElementById('sFill').style.background = map[s].c;
 }
+
+document.getElementById('profileModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) hideProfileModal();
+});
 
 // Close modal on overlay click
 document.getElementById('newChatModal').addEventListener('click', e => {
