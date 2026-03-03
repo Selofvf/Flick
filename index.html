@@ -330,7 +330,7 @@
       <div class="chat-header">
         <button class="back-btn" onclick="goBack()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div class="chat-header-avatar" id="chatHeaderAvatar">?</div>
-        <div><div class="chat-header-name" id="chatHeaderName">—</div><div class="chat-header-status">в сети</div></div>
+        <div><div class="chat-header-name" id="chatHeaderName">—</div><div class="chat-header-status" id="chatHeaderStatus">в сети</div></div>
       </div>
       <div class="messages-area" id="messagesArea">
         <div class="typing-indicator" id="typingIndicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
@@ -443,6 +443,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtServerTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyCQCTJ3S2-9pTBkN5aZEh5CQu1vUfYl7MU",
@@ -450,10 +451,11 @@ const firebaseConfig = {
   projectId:"flick-messenger-d6494",
   storageBucket:"flick-messenger-d6494.firebasestorage.app",
   messagingSenderId:"105311750186",
-  appId:"1:105311750186:web:539f413ec12f0cd42edb53"
+  appId:"1:105311750186:web:539f413ec12f0cd42edb53",
+  databaseURL:"https://flick-messenger-d6494-default-rtdb.europe-west1.firebasedatabase.app"
 };
 
-const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app), rtdb=getDatabase(app);
 let currentUser=null, currentChatId=null, chatsData=[], msgUnsub=null, chatsUnsub=null, pendingPhoto=null;
 
 // Expose functions to global scope
@@ -467,6 +469,7 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('appScreen').classList.add('show');
     updateBadge(user);
     await ensureUser(user);
+    setupPresence(user.uid);
     listenChats();
   } else {
     currentUser = null;
@@ -479,6 +482,48 @@ onAuthStateChanged(auth, async user => {
 async function ensureUser(user) {
   const r = doc(db,'users',user.uid), s = await getDoc(r);
   if (!s.exists()) await setDoc(r,{uid:user.uid,email:user.email,username:user.displayName||user.email.split('@')[0],createdAt:serverTimestamp()});
+}
+
+// PRESENCE SYSTEM
+function setupPresence(uid) {
+  const presenceRef = ref(rtdb, 'presence/' + uid);
+  const connRef = ref(rtdb, '.info/connected');
+  onValue(connRef, snap => {
+    if (!snap.val()) return;
+    // When disconnected — set offline
+    onDisconnect(presenceRef).set({ online: false, lastSeen: rtServerTimestamp() });
+    // Set online now
+    set(presenceRef, { online: true, lastSeen: rtServerTimestamp() });
+  });
+}
+
+let statusUnsub = null;
+function watchUserStatus(uid) {
+  if (statusUnsub) { statusUnsub(); statusUnsub = null; }
+  const presenceRef = ref(rtdb, 'presence/' + uid);
+  statusUnsub = onValue(presenceRef, snap => {
+    const data = snap.val();
+    const statusEl = document.getElementById('chatHeaderStatus');
+    if (!statusEl) return;
+    if (data?.online) {
+      statusEl.textContent = 'в сети';
+      statusEl.style.color = 'var(--green)';
+    } else if (data?.lastSeen) {
+      const date = new Date(data.lastSeen);
+      const now = new Date();
+      const diff = Math.floor((now - date) / 60000);
+      let text;
+      if (diff < 1) text = 'был(а) только что';
+      else if (diff < 60) text = 'был(а) ' + diff + ' мин. назад';
+      else if (diff < 1440) text = 'был(а) ' + Math.floor(diff/60) + ' ч. назад';
+      else text = 'был(а) ' + date.toLocaleDateString('ru', {day:'numeric',month:'short'});
+      statusEl.textContent = text;
+      statusEl.style.color = 'var(--muted)';
+    } else {
+      statusEl.textContent = 'не в сети';
+      statusEl.style.color = 'var(--muted)';
+    }
+  });
 }
 
 function updateBadge(user) {
@@ -549,6 +594,17 @@ window.openChat = (chatId, name) => {
   document.getElementById('stickerPanel').classList.remove('show');
   renderChats(chatsData);
   listenMessages(chatId);
+  // Watch online status of other user (only for personal chats)
+  const chat = chatsData.find(c => c.id === chatId);
+  if (chat && !chat.type) {
+    const otherId = chat.members.find(m => m !== currentUser.uid);
+    if (otherId) watchUserStatus(otherId);
+  } else {
+    // For groups/channels just show members count
+    if (statusUnsub) { statusUnsub(); statusUnsub = null; }
+    const statusEl = document.getElementById('chatHeaderStatus');
+    if (statusEl) { statusEl.textContent = 'группа'; statusEl.style.color = 'var(--muted)'; }
+  }
   if (window.innerWidth<=768) {
     document.getElementById('sidebar').style.display='none';
     document.getElementById('chatArea').classList.add('mobile-open');
@@ -560,6 +616,7 @@ window.goBack = () => {
   document.getElementById('sidebar').style.display='flex';
   currentChatId=null;
   if (msgUnsub){msgUnsub();msgUnsub=null;}
+  if (statusUnsub){statusUnsub();statusUnsub=null;}
 };
 
 // MESSAGES
