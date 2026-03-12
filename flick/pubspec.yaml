@@ -26,7 +26,7 @@ dependencies:
   http: ^1.2.0
   crypto: ^3.0.3
   audioplayers: ^6.0.0
-  firebase_database: ^11.1.0
+  firebase_database: ^11.3.0
   emoji_picker_flutter: ^4.4.0
   flutter_launcher_icons: ^0.13.1
 dev_dependencies:
