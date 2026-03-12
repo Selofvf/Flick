@@ -21,7 +21,7 @@ dependencies:
   cloud_firestore: ^5.1.0
   firebase_storage: ^12.1.0
   firebase_messaging: ^15.1.0
-  flutter_webrtc: ^0.9.48+hotfix.1
+  flutter_webrtc: ^0.13.0
   record: ^6.0.0
   http: ^1.2.0
   crypto: ^3.0.3
