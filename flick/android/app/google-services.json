@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "105311750186",
+    "firebase_url": "https://flick-messenger-d6494-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "flick-messenger-d6494",
+    "storage_bucket": "flick-messenger-d6494.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:105311750186:android:515544ce0b194b2c2edb53",
+        "android_client_info": {
+          "package_name": "com.selov.flick"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkwVzh5HZYS-BZKxiH2TAKv9RasBfIod0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
